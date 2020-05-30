@@ -147,6 +147,7 @@ class Game extends Component {
       {
         currentRound: this.state.currentRound + 1,
         revealAllAnswers: false,
+        scoreChange: undefined,
         allOut: false,
         misses: [],
         originalOrderPlayerScores: [...this.state.playerScores],
@@ -159,7 +160,6 @@ class Game extends Component {
   }
 
   updateResult(result) {
-    console.log("start of update reslt");
     if (result.outcome !== "used") {
       var scoreChangeValue = "";
       if (result.outcome === "correct") {
@@ -265,15 +265,20 @@ class Game extends Component {
           <FinalResult playerScores={this.state.playerScores} />
         </div>
       ) : (
-        <Round
-          question={this.state.questions[this.state.currentRound]}
-          currentRound={this.state.currentRound}
-          playerScores={this.state.playerScores}
-          updateResult={this.updateResult}
-          currentPlayer={this.state.currentPlayer}
-          allOut={this.state.allOut}
-          revealAllAnswers={this.state.revealAllAnswers}
-        />
+        <React.Fragment>
+          <h6>
+            Round {this.state.currentRound + 1}/{this.state.questions.length}
+          </h6>
+          <Round
+            question={this.state.questions[this.state.currentRound]}
+            currentRound={this.state.currentRound}
+            playerScores={this.state.playerScores}
+            updateResult={this.updateResult}
+            currentPlayer={this.state.currentPlayer}
+            allOut={this.state.allOut}
+            revealAllAnswers={this.state.revealAllAnswers}
+          />
+        </React.Fragment>
       );
     return (
       <div>
@@ -482,9 +487,25 @@ class Leaderboard extends Component {
             margin: "auto",
           }}
         >
-          {this.props.scoreChange &&
-            this.props.scoreChange.name === player.name &&
-            this.props.scoreChange.value}
+          <span
+            style={{
+              color:
+                this.props.scoreChange &&
+                this.props.scoreChange.value.includes("+")
+                  ? "limegreen"
+                  : "red",
+            }}
+            className={classnames({
+              blink:
+                this.props.scoreChange &&
+                this.props.scoreChange.value &&
+                this.props.scoreChange.name === player.name,
+            })}
+          >
+            {this.props.scoreChange &&
+              this.props.scoreChange.name === player.name &&
+              this.props.scoreChange.value}
+          </span>
         </div>
       </div>
     ));
@@ -549,31 +570,33 @@ class Round extends Component {
 
   onSubmit(e) {
     e.preventDefault();
-    const result = this.getResult(this.state.guess);
+    if (this.state.guess.trim()) {
+      const result = this.getResult(this.state.guess);
 
-    if (result.outcome === "wrong") {
-      const wrongAudio = new Audio(wrong);
-      this.playAudio(wrongAudio);
-      this.setState({
-        guess: "",
-      });
-    } else if (result.outcome === "used") {
-      this.setState({
-        guess: "",
-      });
-    } else if (result.outcome === "correct") {
-      const correctAudio = new Audio(correct);
-      this.playAudio(correctAudio);
-      this.setState(
-        {
-          answer: result.answer,
+      if (result.outcome === "wrong") {
+        const wrongAudio = new Audio(wrong);
+        this.playAudio(wrongAudio);
+        this.setState({
           guess: "",
-        },
-        () => this.forceUpdate()
-      );
-    }
+        });
+      } else if (result.outcome === "used") {
+        this.setState({
+          guess: "",
+        });
+      } else if (result.outcome === "correct") {
+        const correctAudio = new Audio(correct);
+        this.playAudio(correctAudio);
+        this.setState(
+          {
+            answer: result.answer,
+            guess: "",
+          },
+          () => this.forceUpdate()
+        );
+      }
 
-    this.props.updateResult(result);
+      this.props.updateResult(result);
+    }
     console.log("end of on submit");
   }
 
@@ -641,7 +664,7 @@ class Round extends Component {
     );
 
     return (
-      <div>
+      <div style={{ height: "1000px" }}>
         <div>
           <FlipMove duration="2000">
             <div key={question.theme}>
@@ -656,7 +679,7 @@ class Round extends Component {
           </FlipMove>
         </div>
 
-        <div>
+        <div style={{ marginTop: "30px" }}>
           <div className="row">
             <div className="col s12" style={{ marginTop: "10px" }}>
               <form noValidate onSubmit={this.onSubmit}>
@@ -673,7 +696,7 @@ class Round extends Component {
               </form>
             </div>
           </div>
-          <div style={{ marginTop: "10px" }}>
+          <div style={{ marginTop: "40px", alignItems: "center" }}>
             <AnswerFields
               numAnswers={this.props.question.answers.length}
               submittedAnswer={this.state.answer}
@@ -707,7 +730,7 @@ class AnswerFields extends Component {
   }
 
   componentWillReceiveProps(newProps) {
-    if (newProps.question.condition !== this.props.question.condition) {
+    if (newProps.question.question !== this.props.question.question) {
       const numAnswers = newProps.numAnswers;
       const newAnswers = [];
       for (let i = 0; i < numAnswers; i++) {
@@ -758,7 +781,7 @@ class AnswerFields extends Component {
 
     this.state.answers.forEach((answer, i) => {
       answerFields.push(
-        <AnswerField key={i + this.props.question.condition} answer={answer} />
+        <AnswerField key={i + this.props.question.question} answer={answer} />
       );
     });
 

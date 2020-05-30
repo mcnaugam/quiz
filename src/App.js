@@ -2,7 +2,6 @@ import React from "react";
 import "./App.css";
 import AddPlayers from "./components/addPlayers";
 import { BrowserRouter as Router, Route } from "react-router-dom";
-import Header from "./components/header";
 import Game from "./components/game";
 
 function App() {
